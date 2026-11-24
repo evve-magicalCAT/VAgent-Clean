@@ -1,0 +1,37 @@
+shuohao-skills
+Copyright 2026 烁皓
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+---
+
+Rui-Skills public client adaptations, usage-metric consent and hosted API client
+Copyright 2026 瑞 (daguaid341-cpu)
+Modified data-contract documents derived from eternityspring/shuohao-skills,
+upstream commit ef4ac0c313c7eeb1f918db5f0f0eb319745900bc.
+The private hosted implementation is not included in this distribution.
+
+---
+
+The bundled sample story `skills/storycast/examples/渡口.txt` is an original
+work written for this project and is covered by the same license.
+
+---
+
+2026-10-26 public 2.5.0 licensing notice
+The current distribution includes the Rui non-commercial terms in LICENSE,
+limited to portions the licensor is entitled to license under those terms.
+Prior grants and third-party rights are not revoked or restricted. The original
+Apache-2.0 text is preserved verbatim in LICENSE-APACHE-2.0. Existing attribution
+notices above are retained; this NOTICE does not itself alter any license.
+Privacy information is in PRIVACY.md. No runtime or consent setting is changed.

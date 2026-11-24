@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vagent · 自然语言驱动的 AI 视频 Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="stylesheet" href="https://fonts.googleapis.cn/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/static/css/app.css" />
+<style type="text/tailwindcss">
+@theme {
+    --color-base: #0B0C0E;
+    --color-panel: #101114;
+    --color-card: #141519;
+    --color-raise: #1A1B20;
+    --color-line: #23252B;
+    --color-line2: #2E3138;
+    --color-txt: #E8E9EA;
+    --color-sub: #8A8F98;
+    --color-dim: #5A5F68;
+    --color-amber: #F5813C;
+    --color-amber2: #FF9A5C;
+    --color-danger: #C9564E;
+    --color-ok: #8FAE9C;
+    --font-sans: Inter, "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  }
+</style>
+</head>
+<body class="bg-[#07080A] font-sans text-txt antialiased">
+
+<!-- ============ 首屏加载 / 接口异常提示（前端不内置任何业务数据） ============ -->
+<div id="bootGate" class="fixed inset-0 z-[200] flex items-center justify-center bg-[#07080A]">
+  <div class="flex w-[440px] flex-col items-center gap-3 rounded-[12px] border border-line bg-panel px-6 py-7 text-center">
+    <span id="bootSpinner" class="h-5 w-5 animate-spin rounded-full border-2 border-line2 border-t-amber"></span>
+    <p id="bootText" class="text-[12.5px] text-sub">正在从 Python 后端载入项目数据…</p>
+    <div id="bootError" class="hidden w-full flex-col items-start gap-2 rounded-[8px] border border-danger/40 bg-danger/10 px-3 py-2.5 text-left">
+      <p class="flex items-center gap-1.5 text-[11.5px] font-medium text-danger">
+        <i data-lucide="alert-triangle" class="h-3.5 w-3.5"></i>接口连接失败
+      </p>
+      <p id="bootErrorText" class="text-[11px] leading-relaxed text-sub">—</p>
+      <p class="text-[10.5px] leading-relaxed text-dim">请确认 Python 服务已启动（python3 vagent_app.py），并通过 http://127.0.0.1:8000 打开页面，而不是直接打开本地 HTML 文件。</p>
+      <button id="bootRetry" class="mt-1 rounded-[6px] border border-line2 px-2.5 py-1 text-[11px] text-txt transition hover:border-amber/45 hover:text-amber2">重新连接</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 图形符号（三视图 / 场景 / 镜头关键帧） ============ -->
+<svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="fig-front" viewBox="0 0 120 170">
+      <circle cx="60" cy="26" r="12" fill="currentColor" opacity=".95"/>
+      <path d="M49 40h22l5 7 9 56-10 3-5-30v22l-3 44h-9l-2-38-2 38h-9l-3-44v-22l-5 30-10-3 9-56z" fill="currentColor" opacity=".82"/>
+      <path d="M60 44v98" stroke="currentColor" stroke-opacity=".45" stroke-width="1.4"/>
+    </symbol>
+    <symbol id="fig-side" viewBox="0 0 120 170">
+      <circle cx="63" cy="26" r="12" fill="currentColor" opacity=".95"/>
+      <path d="M56 40h15l6 8 7 55-9 3-4-32v20l6 46h-8l-6-40-3 40h-8l2-46v-20l-4 32-9-3 6-55z" fill="currentColor" opacity=".8"/>
+      <path d="M58 48h9" stroke="currentColor" stroke-opacity=".5" stroke-width="1.4"/>
+    </symbol>
+    <symbol id="fig-back" viewBox="0 0 120 170">
+      <circle cx="60" cy="26" r="12" fill="currentColor" opacity=".95"/>
+      <path d="M46 40h28l6 7 9 56-10 3-5-30v22l-3 44h-9l-2-38-2 38h-9l-3-44v-22l-5 30-10-3 9-56z" fill="currentColor" opacity=".78"/>
+    </symbol>
+    <symbol id="scn-wide" viewBox="0 0 200 130">
+      <rect x="0" y="88" width="200" height="42" fill="currentColor" opacity=".16"/>
+      <rect x="14" y="32" width="44" height="56" fill="currentColor" opacity=".3"/>
+      <rect x="64" y="48" width="30" height="40" fill="currentColor" opacity=".24"/>
+      <rect x="102" y="22" width="60" height="66" fill="currentColor" opacity=".28"/>
+      <rect x="118" y="42" width="14" height="7" fill="currentColor" opacity=".85"/>
+      <rect x="138" y="42" width="10" height="7" fill="currentColor" opacity=".6"/>
+      <path d="M0 96h200" stroke="currentColor" stroke-opacity=".3" stroke-width="1.2"/>
+      <path d="M30 130l14-34h12l-16 34z" fill="currentColor" opacity=".12"/>
+    </symbol>
+    <symbol id="scn-corner" viewBox="0 0 200 130">
+      <path d="M0 20h58l-14 68H0z" fill="currentColor" opacity=".32"/>
+      <path d="M200 8h-54l16 80h38z" fill="currentColor" opacity=".26"/>
+      <rect x="76" y="52" width="46" height="36" fill="currentColor" opacity=".2"/>
+      <path d="M0 88h200" stroke="currentColor" stroke-opacity=".3" stroke-width="1.2"/>
+      <path d="M62 88l30-26 22 26z" fill="currentColor" opacity=".14"/>
+      <rect x="88" y="60" width="10" height="6" fill="currentColor" opacity=".8"/>
+    </symbol>
+    <symbol id="scn-top" viewBox="0 0 200 130">
+      <path d="M60 0h80l34 130H26z" fill="currentColor" opacity=".22"/>
+      <path d="M70 0h12l-14 130H54z" fill="currentColor" opacity=".12"/>
+      <path d="M118 0h12l14 130h-14z" fill="currentColor" opacity=".12"/>
+      <rect x="0" y="0" width="52" height="130" fill="currentColor" opacity=".3"/>
+      <rect x="148" y="0" width="52" height="130" fill="currentColor" opacity=".26"/>
+      <rect x="24" y="84" width="12" height="8" fill="currentColor" opacity=".7"/>
+      <rect x="166" y="34" width="12" height="8" fill="currentColor" opacity=".7"/>
+    </symbol>
+    <symbol id="scn-street" viewBox="0 0 200 130">
+      <rect x="0" y="70" width="200" height="60" fill="currentColor" opacity=".18"/>
+      <rect x="26" y="18" width="26" height="52" fill="currentColor" opacity=".34"/>
+      <rect x="62" y="34" width="18" height="36" fill="currentColor" opacity=".26"/>
+      <rect x="150" y="24" width="24" height="46" fill="currentColor" opacity=".3"/>
+      <rect x="96" y="44" width="40" height="26" fill="currentColor" opacity=".22"/>
+      <rect x="104" y="50" width="12" height="6" fill="currentColor" opacity=".85"/>
+      <path d="M0 78h200" stroke="currentColor" stroke-opacity=".3" stroke-width="1.2"/>
+    </symbol>
+    <symbol id="shot-street" viewBox="0 0 200 125">
+      <rect x="0" y="74" width="200" height="51" fill="currentColor" opacity=".16"/>
+      <path d="M0 74h200" stroke="currentColor" stroke-opacity=".35" stroke-width="1"/>
+      <rect x="4" y="32" width="30" height="42" fill="currentColor" opacity=".34"/>
+      <rect x="38" y="46" width="20" height="28" fill="currentColor" opacity=".24"/>
+      <rect x="150" y="28" width="34" height="46" fill="currentColor" opacity=".32"/>
+      <rect x="120" y="50" width="24" height="24" fill="currentColor" opacity=".2"/>
+      <rect x="130" y="56" width="10" height="5" fill="#F5813C" opacity=".5"/>
+      <ellipse cx="96" cy="26" rx="26" ry="16" fill="#FF9A5C" opacity=".1"/>
+      <circle cx="96" cy="22" r="3.2" fill="#F5813C" opacity=".75"/>
+      <path d="M96 25v49" stroke="currentColor" stroke-opacity=".25" stroke-width="1.6"/>
+      <ellipse cx="96" cy="84" rx="28" ry="5" fill="#F5813C" opacity=".1"/>
+      <rect x="0" y="0" width="200" height="125" fill="url(#rainPattern)"/>
+    </symbol>
+    <symbol id="shot-push" viewBox="0 0 200 125">
+      <rect x="10" y="0" width="180" height="125" fill="currentColor" opacity=".18"/>
+      <rect x="100" y="6" width="80" height="112" fill="#FF9A5C" opacity=".1"/>
+      <path d="M100 0v125M10 0v125M190 0v125" stroke="currentColor" stroke-opacity=".48" stroke-width="2"/>
+      <rect x="108" y="14" width="20" height="10" fill="#FF9A5C" opacity=".28"/>
+      <rect x="152" y="42" width="12" height="36" rx="4" fill="currentColor" opacity=".55"/>
+      <rect x="58" y="44" width="9" height="36" rx="4" fill="currentColor" opacity=".45"/>
+      <rect x="0" y="106" width="200" height="19" fill="currentColor" opacity=".2"/>
+      <rect x="0" y="0" width="200" height="125" fill="url(#rainPattern)"/>
+    </symbol>
+    <symbol id="shot-door" viewBox="0 0 200 125">
+      <rect x="26" y="16" width="148" height="88" fill="currentColor" opacity=".22"/>
+      <rect x="22" y="12" width="156" height="6" fill="currentColor" opacity=".4"/>
+      <rect x="38" y="24" width="124" height="9" rx="1.5" fill="#F5813C" opacity=".85"/>
+      <ellipse cx="100" cy="32" rx="82" ry="24" fill="#FF9A5C" opacity=".1"/>
+      <rect x="44" y="42" width="112" height="62" fill="currentColor" opacity=".3"/>
+      <path d="M100 42v62M44 74h112" stroke="currentColor" stroke-opacity=".5" stroke-width="1.4"/>
+      <rect x="50" y="48" width="18" height="9" fill="#FF9A5C" opacity=".22"/>
+      <use href="#fig-front" x="86" y="42" width="30" height="52" style="color:#07090B"/>
+      <rect x="0" y="104" width="200" height="21" fill="currentColor" opacity=".18"/>
+      <path d="M0 104h200" stroke="currentColor" stroke-opacity=".4" stroke-width="1"/>
+      <rect x="0" y="0" width="200" height="125" fill="url(#rainPattern)"/>
+    </symbol>
+    <symbol id="shot-shelf" viewBox="0 0 200 125">
+      <rect x="0" y="0" width="200" height="8" fill="currentColor" opacity=".32"/>
+      <rect x="0" y="26" width="200" height="5" fill="currentColor" opacity=".28"/>
+      <rect x="0" y="58" width="200" height="5" fill="currentColor" opacity=".28"/>
+      <rect x="0" y="90" width="200" height="5" fill="currentColor" opacity=".24"/>
+      <g fill="currentColor" opacity=".24">
+        <rect x="8" y="12" width="10" height="13"/><rect x="22" y="14" width="8" height="11"/><rect x="34" y="10" width="12" height="15"/>
+        <rect x="150" y="12" width="10" height="13"/><rect x="164" y="14" width="9" height="11"/><rect x="177" y="10" width="14" height="15"/>
+        <rect x="8" y="44" width="9" height="13"/><rect x="21" y="42" width="12" height="15"/><rect x="37" y="46" width="8" height="11"/>
+        <rect x="152" y="44" width="10" height="13"/><rect x="166" y="42" width="12" height="15"/>
+      </g>
+      <path d="M0 0h54l-6 125H0z" fill="currentColor" opacity=".3"/>
+      <path d="M200 0h-50l8 125h42z" fill="currentColor" opacity=".28"/>
+      <use href="#fig-side" x="84" y="40" width="34" height="62" style="color:#080A0C"/>
+      <ellipse cx="100" cy="110" rx="26" ry="5" fill="#000" opacity=".3"/>
+    </symbol>
+    <symbol id="shot-counter" viewBox="0 0 200 125">
+      <rect x="0" y="0" width="200" height="66" fill="currentColor" opacity=".14"/>
+      <rect x="18" y="10" width="164" height="4" fill="currentColor" opacity=".3"/>
+      <use href="#fig-front" x="74" y="18" width="46" height="54" style="color:#0A0C0E"/>
+      <rect x="0" y="70" width="200" height="55" fill="currentColor" opacity=".36"/>
+      <path d="M0 70h200" stroke="currentColor" stroke-opacity=".55" stroke-width="1.4"/>
+      <rect x="24" y="44" width="26" height="26" rx="2" fill="currentColor" opacity=".5"/>
+      <rect x="28" y="48" width="18" height="9" fill="#FF9A5C" opacity=".3"/>
+      <rect x="140" y="52" width="30" height="18" rx="2" fill="currentColor" opacity=".4"/>
+      <ellipse cx="100" cy="96" rx="56" ry="9" fill="#F5813C" opacity=".07"/>
+    </symbol>
+    <symbol id="shot-bell" viewBox="0 0 200 125">
+      <rect x="30" y="6" width="140" height="108" fill="currentColor" opacity=".2"/>
+      <rect x="36" y="12" width="60" height="96" fill="#FF9A5C" opacity=".07"/>
+      <path d="M100 6v108" stroke="currentColor" stroke-opacity=".48" stroke-width="2"/>
+      <rect x="30" y="6" width="140" height="108" fill="none" stroke="currentColor" stroke-opacity=".48" stroke-width="2"/>
+      <rect x="86" y="26" width="18" height="12" rx="2" fill="currentColor" opacity=".5"/>
+      <circle cx="95" cy="32" r="2.6" fill="#F5813C" opacity=".85"/>
+      <rect x="0" y="104" width="200" height="21" fill="currentColor" opacity=".18"/>
+      <rect x="0" y="0" width="200" height="125" fill="url(#rainPattern)"/>
+    </symbol>
+    <pattern id="rainPattern" width="34" height="34" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="-9" y2="34" stroke="#ffffff" stroke-opacity=".07" stroke-width="1"/>
+      <line x1="20" y1="0" x2="11" y2="34" stroke="#ffffff" stroke-opacity=".05" stroke-width="1"/>
+    </pattern>
+  </defs>
+</svg>
+
+<!-- ============ 舞台：应用容器，窄屏等比缩放 ============ -->
+<div class="flex min-h-screen w-full items-center justify-center bg-[#07080A]">
+  <div id="frameWrap" class="relative shrink-0">
+    <div id="frame" class="frame-shadow absolute left-0 top-0 flex h-[900px] w-[1440px] origin-top-left flex-col overflow-hidden rounded-[14px] border border-line bg-base">
+
+      <!-- ==================== 顶栏 ==================== -->
+      <header class="relative z-40 flex h-14 shrink-0 items-center gap-5 border-b border-line bg-panel px-5">
+        <div class="flex w-[158px] items-center gap-2.5">
+          <div class="grad-amber flex h-7 w-7 items-center justify-center rounded-[8px]">
+            <svg viewBox="0 0 16 16" class="h-[15px] w-[15px]" aria-hidden="true"><path d="M3.1 3.2h3.15l2.35 6.15 2.35-6.15h3.15L9.35 12.9H7.25z" fill="#1B0E05"/></svg>
+          </div>
+          <div class="leading-none">
+            <p class="text-[14px] font-semibold tracking-tight">Vagent</p>
+            <p class="mt-[3px] text-[9px] tracking-[0.18em] text-dim">AI VIDEO AGENT</p>
+          </div>
+        </div>
+
+        <!-- 项目切换器 -->
+        <div class="relative" id="switcherWrap">
+          <button id="switcherBtn" class="flex items-center gap-2 rounded-full border border-line bg-raise/70 py-1 pl-2.5 pr-2 transition hover:border-line2 hover:bg-raise" aria-expanded="false">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber/80"></span>
+            <span id="switcherName" class="text-[12.5px] font-medium text-txt">载入中…</span>
+            <span class="h-3 w-px bg-line2"></span>
+            <span id="switcherSub" class="text-[11.5px] text-sub">…</span>
+            <span id="switcherTag" class="rounded-[4px] border border-line px-1 py-[1px] text-[9px] text-dim">…</span>
+            <i data-lucide="chevron-down" class="h-3 w-3 shrink-0 text-dim"></i>
+          </button>
+          <div id="switcherPanel" class="absolute left-0 top-[calc(100%+9px)] hidden w-[352px] overflow-hidden rounded-[10px] border border-line2 bg-[#101114] shadow-[0_30px_70px_-20px_rgba(0,0,0,.98)]">
+            <div class="border-b border-line p-2">
+              <label class="flex h-8 items-center gap-2 rounded-md border border-line bg-[#0C0D10] px-2.5">
+                <i data-lucide="search" class="h-3 w-3 shrink-0 text-dim"></i>
+                <input id="projSearch" type="text" placeholder="搜索项目" class="w-full bg-transparent text-[11.5px] text-txt placeholder:text-dim" />
+              </label>
+            </div>
+            <div id="recentList" class="py-1"></div>
+            <div class="border-t border-line p-1"></div>
+          </div>
+        </div>
+
+        <div class="ml-auto flex items-center gap-3">
+          <!-- API 用量入口（不含任何个人信息） -->
+          <button id="avatarBtn" type="button" class="group flex items-center gap-1.5 rounded-full border border-line bg-raise/60 py-1 pl-2.5 pr-2 transition hover:border-line2" aria-label="API 使用情况" aria-expanded="false">
+            <i data-lucide="gauge" class="h-3.5 w-3.5 text-amber/80"></i>
+            <span class="text-[11.5px] text-sub transition group-hover:text-txt">API 用量</span>
+            <span id="usageTotal" class="rounded-[4px] bg-panel px-1.5 py-[1px] text-[9.5px] tabular-nums text-dim">0 次</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ==================== 左侧导航 + 视图容器 ==================== -->
+      <div class="flex min-h-0 flex-1">
+        <nav id="rail" class="flex w-[78px] shrink-0 flex-col gap-1 border-r border-line bg-[#0E0F12] px-2 py-3"></nav>
+        <div id="viewRoot" class="relative min-w-0 flex-1 overflow-hidden"></div>
+      </div>
+
+      <!-- ==================== API 设置与用量抽屉（不含个人信息） ==================== -->
+      <div id="drawerMask" class="absolute inset-0 z-50 hidden bg-[#07080A]/55 backdrop-blur-[1px]" data-drawer-close></div>
+      <aside id="drawer" class="absolute inset-y-0 right-0 z-[60] flex w-[620px] translate-x-full flex-col border-l border-line2 bg-[#0E0F12] shadow-[-60px_0_120px_-50px_rgba(0,0,0,.95)] transition-transform duration-300 ease-out" aria-label="API 设置与用量">
+        <div class="shrink-0 border-b border-line">
+          <div class="flex items-center gap-2 px-7 pt-4">
+            <h2 class="text-[13px] font-medium">API 设置与用量</h2>
+            <button type="button" data-drawer-close class="ml-auto flex h-7 w-7 items-center justify-center rounded-[7px] border border-line text-dim transition hover:border-line2 hover:text-sub" aria-label="关闭">
+              <i data-lucide="x" class="h-3.5 w-3.5"></i>
+            </button>
+          </div>
+          <div class="mt-3 flex items-end gap-6 px-7">
+            <button type="button" data-tab="api" class="group relative flex h-8 items-center text-[12.5px] font-medium text-txt">API 设置<span data-ink class="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-amber"></span></button>
+            <button type="button" data-tab="usage" class="group relative flex h-8 items-center text-[12.5px] text-sub transition hover:text-txt">API 用量<span data-ink class="absolute inset-x-0 bottom-0 hidden h-[2px] rounded-full bg-amber"></span></button>
+          </div>
+        </div>
+        <div class="relative min-h-0 flex-1">
+          <div id="drawerBody" class="hide-scroll h-full overflow-y-auto px-7 py-3"></div>
+        </div>
+        <div class="flex shrink-0 items-center gap-3 border-t border-line bg-[#0C0D10] px-7 py-3">
+          <button type="button" data-action="save-settings" class="grad-amber flex h-8 items-center gap-1.5 rounded-[7px] px-3.5 text-[12px] font-medium text-[#1B0E05] shadow-[0_6px_16px_-10px_rgba(245,129,60,.9)]">
+            <i data-lucide="check" class="h-3.5 w-3.5"></i>保存设置
+          </button>
+          <button type="button" data-action="api-reset" class="text-[11.5px] text-sub transition hover:text-txt">恢复平台默认</button>
+          <span id="drawerSavedAt" class="ml-auto text-[10px] text-dim">尚未保存过设置</span>
+        </div>
+      </aside>
+
+      <!-- ==================== 迁移资产浮层 ==================== -->
+      <div id="migrateMask" class="absolute inset-0 z-[55] hidden bg-[#07080A]/60" data-migrate-close></div>
+      <div id="migrateModal" class="absolute left-1/2 top-1/2 z-[56] hidden w-[584px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[12px] border border-line2 bg-[#101114] shadow-[0_40px_100px_-30px_rgba(0,0,0,.98)]"></div>
+
+      <!-- ==================== Toast ==================== -->
+      <div id="toastHost" class="pointer-events-none absolute right-6 top-[68px] z-[80] flex w-[300px] flex-col items-end gap-2"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
